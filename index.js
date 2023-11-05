@@ -29,7 +29,21 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    //await client.connect();
+const categoryCollection = client.db("softBlogDB").collection("categories");
+
+app.post('/addCategory', async(req, res) => {
+    const category = req.body;
+    const result = await categoryCollection.insertOne(category);
+   // console.log(result);
+    res.send(result);
+})
+app.get('/category', async(req, res) => {
+   const cursor = categoryCollection.find({});
+    const categories = await cursor.toArray();
+    res.send(categories);
+    })
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
