@@ -1,7 +1,7 @@
 const express = require('express');
 require('dotenv').config();
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/', (req, res) => {
-    res.send('Welcome to Soft Blog');
+  res.send('Welcome to Soft Blog');
 })
 
 
@@ -30,18 +30,39 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     //await client.connect();
-const categoryCollection = client.db("softBlogDB").collection("categories");
+    const categoryCollection = client.db("softBlogDB").collection("categories");
+    const blogsCollection = client.db("softBlogDB").collection("blogs");
 
-app.post('/addCategory', async(req, res) => {
-    const category = req.body;
-    const result = await categoryCollection.insertOne(category);
-   // console.log(result);
-    res.send(result);
-})
-app.get('/category', async(req, res) => {
-   const cursor = categoryCollection.find({});
-    const categories = await cursor.toArray();
-    res.send(categories);
+    app.post('/addCategory', async (req, res) => {
+      const category = req.body;
+      const result = await categoryCollection.insertOne(category);
+      // console.log(result);
+      res.send(result);
+    })
+    app.get('/category', async (req, res) => {
+      const cursor = categoryCollection.find({});
+      const categories = await cursor.toArray();
+      res.send(categories);
+    })
+
+    app.post('/blogs', async(req, res) => {
+      const blog = req.body;
+      const result = await blogsCollection.insertOne(blog);
+      res.send(result);
+    })
+
+    app.get('/allBlogs', async(req, res) => {
+      const cursor = blogsCollection.find({});
+      const blogs = await cursor.toArray();
+      res.send(blogs);
+    })
+
+    app.get('/allBlogs/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const blog = await blogsCollection.findOne(query);
+      res.send(blog);
+
     })
 
     // Send a ping to confirm a successful connection
@@ -55,5 +76,5 @@ app.get('/category', async(req, res) => {
 run().catch(console.dir);
 
 app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`);
+  console.log(`Example app listening at http://localhost:${port}`);
 })
