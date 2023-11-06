@@ -66,6 +66,33 @@ async function run() {
 
     })
 
+    app.delete('/blogs/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)};
+      const result = await blogsCollection.deleteOne(query);
+      res.send(result);
+    })
+
+    app.put('/allBlogs/:id', async(req, res) => {
+      const id = req.params.id;
+      const updatedBlog = req.body;
+      const filter = {_id: new ObjectId(id)};
+      const options = {upsert: true};
+      const blog = {
+        $set: {
+          title: updatedBlog.title,
+          category: updatedBlog.category,
+          image: updatedBlog.image,
+          authorImg: updatedBlog.authorImg,
+          shortDescription: updatedBlog.shortDescription,
+          details: updatedBlog.details,
+          date: updatedBlog.date,
+        },
+      };
+      const result = await blogsCollection.updateOne(filter, blog, options);
+      res.send(result);
+    })
+
     app.post('/addWishList', async(req, res) => {
       const wishList = req.body;
       const result = await wishListCollection.insertOne(wishList);
@@ -91,6 +118,19 @@ async function run() {
       const query = {_id: new ObjectId(id)};
       const result = await wishListCollection.deleteOne(query);
       res.send(result);
+    })
+
+    app.get('/profile', async(req, res) => {
+      const cursor = blogsCollection.find({});
+      const blogs = await cursor.toArray();
+      res.send(blogs);
+    })
+
+    app.get('/profile/:email' , async(req, res) => {
+      const email = req.params.email;
+      const query = { postAdminMail : email};
+      const profile = await blogsCollection.find(query).toArray();
+      res.send(profile);
     })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
