@@ -33,7 +33,7 @@ async function run() {
     const categoryCollection = client.db("softBlogDB").collection("categories");
     const blogsCollection = client.db("softBlogDB").collection("blogs");
     const wishListCollection = client.db("softBlogDB").collection("wishLists");
-
+    const commentsCollection = client.db("softBlogDB").collection("comments");
     app.post('/addCategory', async (req, res) => {
       const category = req.body;
       const result = await categoryCollection.insertOne(category);
@@ -53,7 +53,7 @@ async function run() {
     })
 
     app.get('/allBlogs', async (req, res) => {
-      const cursor = blogsCollection.find({}).sort({ date: -1 });
+      const cursor = blogsCollection.find({}).sort({ currentDate: -1 });
       const blogs = await cursor.toArray();
       res.send(blogs);
     })
@@ -92,6 +92,7 @@ async function run() {
         authorImg: updatedBlog.authorImg,
         shortDescription: updatedBlog.shortDescription,
         details: updatedBlog.details,
+        currentDate: updatedBlog.currentDate,
         date: updatedBlog.date,
       },
     };
@@ -138,6 +139,26 @@ async function run() {
     const profile = await blogsCollection.find(query).toArray();
     res.send(profile);
   })
+
+  app.post('/addComment', async(req, res) => {
+    const comment = req.body;
+    const result = await commentsCollection.insertOne(comment);
+    res.send(result);
+  })
+
+  app.get('/comments' , async(req, res) => {
+    const cursor = commentsCollection.find({});
+    const comments = await cursor.toArray();
+    res.send(comments);
+  })
+
+  app.get('/comments/:id', async(req, res) => {
+    const id = req.params.id;
+    const query = { blogId: id };
+    const comments = await commentsCollection.find(query).toArray();
+    res.send(comments);
+  })
+
   // Send a ping to confirm a successful connection
   await client.db("admin").command({ ping: 1 });
   console.log("Pinged your deployment. You successfully connected to MongoDB!");
