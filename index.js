@@ -46,99 +46,105 @@ async function run() {
       res.send(categories);
     })
 
-    app.post('/blogs', async(req, res) => {
+    app.post('/blogs', async (req, res) => {
       const blog = req.body;
       const result = await blogsCollection.insertOne(blog);
       res.send(result);
     })
 
-    app.get('/allBlogs', async(req, res) => {
-      const cursor = blogsCollection.find({});
+    app.get('/allBlogs', async (req, res) => {
+      const cursor = blogsCollection.find({}).sort({ date: -1 });
       const blogs = await cursor.toArray();
       res.send(blogs);
     })
 
-    app.get('/allBlogs/:id', async(req, res) => {
-      const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
-      const blog = await blogsCollection.findOne(query);
-      res.send(blog);
-
+    app.get('/featuredBlogs', async (req, res) => {
+      const cursor = blogsCollection.find({}).sort({ details: 1 }).limit(4);
+      const featuredBlogs = await cursor.toArray();
+      res.send(featuredBlogs);
     })
 
-    app.delete('/blogs/:id', async(req, res) => {
-      const id = req.params.id;
-      const query = {_id: new ObjectId(id)};
-      const result = await blogsCollection.deleteOne(query);
-      res.send(result);
-    })
+  app.get('/allBlogs/:id', async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const blog = await blogsCollection.findOne(query);
+    res.send(blog);
 
-    app.put('/allBlogs/:id', async(req, res) => {
-      const id = req.params.id;
-      const updatedBlog = req.body;
-      const filter = {_id: new ObjectId(id)};
-      const options = {upsert: true};
-      const blog = {
-        $set: {
-          title: updatedBlog.title,
-          category: updatedBlog.category,
-          image: updatedBlog.image,
-          authorImg: updatedBlog.authorImg,
-          shortDescription: updatedBlog.shortDescription,
-          details: updatedBlog.details,
-          date: updatedBlog.date,
-        },
-      };
-      const result = await blogsCollection.updateOne(filter, blog, options);
-      res.send(result);
-    })
+  })
 
-    app.post('/addWishList', async(req, res) => {
-      const wishList = req.body;
-      const result = await wishListCollection.insertOne(wishList);
-      res.send(result);
-    })
+  app.delete('/blogs/:id', async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) };
+    const result = await blogsCollection.deleteOne(query);
+    res.send(result);
+  })
 
-    app.get('/wishLists', async(req, res) => {
-      const cursor = wishListCollection.find({});
-      const wishLists = await cursor.toArray();
-      res.send(wishLists);
-    });
+  app.put('/allBlogs/:id', async (req, res) => {
+    const id = req.params.id;
+    const updatedBlog = req.body;
+    const filter = { _id: new ObjectId(id) };
+    const options = { upsert: true };
+    const blog = {
+      $set: {
+        title: updatedBlog.title,
+        category: updatedBlog.category,
+        image: updatedBlog.image,
+        authorImg: updatedBlog.authorImg,
+        shortDescription: updatedBlog.shortDescription,
+        details: updatedBlog.details,
+        date: updatedBlog.date,
+      },
+    };
+    const result = await blogsCollection.updateOne(filter, blog, options);
+    res.send(result);
+  })
 
-    app.get('/wishLists/:email', async(req, res) => {
-      const email = req.params.email;
-      //console.log(email);
-      const query = {currentEmail : email};
-      const wishList = await wishListCollection.find(query).toArray();
-      res.send(wishList);
-    })
+  app.post('/addWishList', async (req, res) => {
+    const wishList = req.body;
+    const result = await wishListCollection.insertOne(wishList);
+    res.send(result);
+  })
 
-    app.delete('/wishList/:_id', async(req, res) => {
-      const id = req.params._id;
-      const query = {_id: new ObjectId(id)};
-      const result = await wishListCollection.deleteOne(query);
-      res.send(result);
-    })
+  app.get('/wishLists', async (req, res) => {
+    const cursor = wishListCollection.find({});
+    const wishLists = await cursor.toArray();
+    res.send(wishLists);
+  });
 
-    app.get('/profile', async(req, res) => {
-      const cursor = blogsCollection.find({});
-      const blogs = await cursor.toArray();
-      res.send(blogs);
-    })
+  app.get('/wishLists/:email', async (req, res) => {
+    const email = req.params.email;
+    //console.log(email);
+    const query = { currentEmail: email };
+    const wishList = await wishListCollection.find(query).toArray();
+    res.send(wishList);
+  })
 
-    app.get('/profile/:email' , async(req, res) => {
-      const email = req.params.email;
-      const query = { postAdminMail : email};
-      const profile = await blogsCollection.find(query).toArray();
-      res.send(profile);
-    })
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    //await client.close();
-  }
+  app.delete('/wishList/:_id', async (req, res) => {
+    const id = req.params._id;
+    const query = { _id: new ObjectId(id) };
+    const result = await wishListCollection.deleteOne(query);
+    res.send(result);
+  })
+
+  app.get('/profile', async (req, res) => {
+    const cursor = blogsCollection.find({});
+    const blogs = await cursor.toArray();
+    res.send(blogs);
+  })
+
+  app.get('/profile/:email', async (req, res) => {
+    const email = req.params.email;
+    const query = { postAdminMail: email };
+    const profile = await blogsCollection.find(query).toArray();
+    res.send(profile);
+  })
+  // Send a ping to confirm a successful connection
+  await client.db("admin").command({ ping: 1 });
+  console.log("Pinged your deployment. You successfully connected to MongoDB!");
+} finally {
+  // Ensures that the client will close when you finish/error
+  //await client.close();
+}
 }
 run().catch(console.dir);
 
