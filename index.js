@@ -1,12 +1,18 @@
 const express = require('express');
 require('dotenv').config();
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(cors({
+  origin: ['http://127.0.0.1:5173', 'http://localhost:5173'],
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 app.get('/', (req, res) => {
   res.send('Welcome to Soft Blog');
@@ -34,6 +40,28 @@ async function run() {
     const blogsCollection = client.db("softBlogDB").collection("blogs");
     const wishListCollection = client.db("softBlogDB").collection("wishLists");
     const commentsCollection = client.db("softBlogDB").collection("comments");
+
+
+
+    //Auth api
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      console.log('user for token', user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+      })
+        .send({ status: true })
+    })
+    app.post('/logout', async (req, res) => {
+      const user = req.body;
+      console.log('logout', user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+      res.clearCookie('token', { maxAge: 0, httpOnly: true, secure: true, sameSite: 'none' })
+        .send({ success: true })
+    })
     app.post('/addCategory', async (req, res) => {
       const category = req.body;
       const result = await categoryCollection.insertOne(category);
@@ -59,113 +87,114 @@ async function run() {
     })
 
     app.get('/featuredBlogs', async (req, res) => {
-      const cursor = blogsCollection.find({}).sort({ details: 1 }).limit(4);
+      const cursor = blogsCollection.find({}).sort({ details: 1 }).limit(10);
       const featuredBlogs = await cursor.toArray();
       res.send(featuredBlogs);
     })
 
-  app.get('/allBlogs/:id', async (req, res) => {
-    const id = req.params.id;
-    const query = { _id: new ObjectId(id) };
-    const blog = await blogsCollection.findOne(query);
-    res.send(blog);
+    app.get('/allBlogs/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const blog = await blogsCollection.findOne(query);
+      res.send(blog);
 
-  })
+    })
 
-  app.delete('/blogs/:id', async (req, res) => {
-    const id = req.params.id;
-    const query = { _id: new ObjectId(id) };
-    const result = await blogsCollection.deleteOne(query);
-    res.send(result);
-  })
+    app.delete('/blogs/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await blogsCollection.deleteOne(query);
+      res.send(result);
+    })
 
-  app.put('/allBlogs/:id', async (req, res) => {
-    const id = req.params.id;
-    const updatedBlog = req.body;
-    const filter = { _id: new ObjectId(id) };
-    const options = { upsert: true };
-    const blog = {
-      $set: {
-        title: updatedBlog.title,
-        category: updatedBlog.category,
-        image: updatedBlog.image,
-        authorImg: updatedBlog.authorImg,
-        shortDescription: updatedBlog.shortDescription,
-        details: updatedBlog.details,
-        currentDate: updatedBlog.currentDate,
-        date: updatedBlog.date,
-      },
-    };
-    const result = await blogsCollection.updateOne(filter, blog, options);
-    res.send(result);
-  })
+    app.put('/allBlogs/:id', async (req, res) => {
+      const id = req.params.id;
+      const updatedBlog = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const blog = {
+        $set: {
+          title: updatedBlog.title,
+          category: updatedBlog.category,
+          image: updatedBlog.image,
+          authorImg: updatedBlog.authorImg,
+          shortDescription: updatedBlog.shortDescription,
+          details: updatedBlog.details,
+          currentDate: updatedBlog.currentDate,
+          date: updatedBlog.date,
+        },
+      };
+      const result = await blogsCollection.updateOne(filter, blog, options);
+      res.send(result);
+    })
 
-  app.post('/addWishList', async (req, res) => {
-    const wishList = req.body;
-    const result = await wishListCollection.insertOne(wishList);
-    res.send(result);
-  })
+    app.post('/addWishList', async (req, res) => {
+      const wishList = req.body;
+      const result = await wishListCollection.insertOne(wishList);
+      res.send(result);
+    })
 
-  app.get('/wishLists', async (req, res) => {
-    const cursor = wishListCollection.find({});
-    const wishLists = await cursor.toArray();
-    res.send(wishLists);
-  });
+    app.get('/wishLists', async (req, res) => {
+      const cursor = wishListCollection.find({});
+      const wishLists = await cursor.toArray();
+      res.send(wishLists);
+    });
 
-  app.get('/wishLists/:email', async (req, res) => {
-    const email = req.params.email;
-    //console.log(email);
-    const query = { currentEmail: email };
-    const wishList = await wishListCollection.find(query).toArray();
-    res.send(wishList);
-  })
+    app.get('/wishLists/:email', async (req, res) => {
+      const email = req.params.email;
+      //console.log(email);
+      console.log('cookies', req.cookies);
+      const query = { currentEmail: email };
+      const wishList = await wishListCollection.find(query).toArray();
+      res.send(wishList);
+    })
 
-  app.delete('/wishList/:_id', async (req, res) => {
-    const id = req.params._id;
-    const query = { _id: new ObjectId(id) };
-    const result = await wishListCollection.deleteOne(query);
-    res.send(result);
-  })
+    app.delete('/wishList/:_id', async (req, res) => {
+      const id = req.params._id;
+      const query = { _id: new ObjectId(id) };
+      const result = await wishListCollection.deleteOne(query);
+      res.send(result);
+    })
 
-  app.get('/profile', async (req, res) => {
-    const cursor = blogsCollection.find({});
-    const blogs = await cursor.toArray();
-    res.send(blogs);
-  })
+    app.get('/profile', async (req, res) => {
+      const cursor = blogsCollection.find({});
+      const blogs = await cursor.toArray();
+      res.send(blogs);
+    })
 
-  app.get('/profile/:email', async (req, res) => {
-    const email = req.params.email;
-    const query = { postAdminMail: email };
-    const profile = await blogsCollection.find(query).toArray();
-    res.send(profile);
-  })
+    app.get('/profile/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { postAdminMail: email };
+      const profile = await blogsCollection.find(query).toArray();
+      res.send(profile);
+    })
 
-  app.post('/addComment', async(req, res) => {
-    const comment = req.body;
-    const result = await commentsCollection.insertOne(comment);
-    res.send(result);
-  })
+    app.post('/addComment', async (req, res) => {
+      const comment = req.body;
+      const result = await commentsCollection.insertOne(comment);
+      res.send(result);
+    })
 
-  app.get('/comments' , async(req, res) => {
-    const cursor = commentsCollection.find({});
-    const comments = await cursor.toArray();
-    res.send(comments);
-  })
+    app.get('/comments', async (req, res) => {
+      const cursor = commentsCollection.find({});
+      const comments = await cursor.toArray();
+      res.send(comments);
+    })
 
-  app.get('/comments/:id', async(req, res) => {
-    const id = req.params.id;
-    const query = { blogId: id };
-    const comments = await commentsCollection.find(query).toArray();
-    res.send(comments);
-  })
+    app.get('/comments/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { blogId: id };
+      const comments = await commentsCollection.find(query).toArray();
+      res.send(comments);
+    })
 
-  // Send a ping to confirm a successful connection
-  await client.db("admin").command({ ping: 1 });
-  console.log("Pinged your deployment. You successfully connected to MongoDB!");
-} finally {
-  // Ensures that the client will close when you finish/error
-  //await client.close();
-}
+    // Send a ping to confirm a successful connection
+    await client.db("admin").command({ ping: 1 });
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+  } finally {
+    // Ensures that the client will close when you finish/error
+    //await client.close();
+  }
 }
 run().catch(console.dir);
 
