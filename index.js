@@ -108,18 +108,42 @@ async function run() {
       res.send(blogs);
     })
 
+    // app.get('/featuredBlogs', async (req, res) => {
+    //   const cursor = blogsCollection.find({}).sort({ "details.length": -1 }).limit(10);
+    //   const featuredBlogs = await cursor.toArray();
+    //   res.send(featuredBlogs);
+    // })
+
     app.get('/featuredBlogs', async (req, res) => {
-      const cursor = blogsCollection.find({}).sort({ details: 1 }).limit(10);
+      const cursor = blogsCollection.aggregate([
+          {
+              $project: {
+                  _id: 1,
+                  title: 1,
+                  category: 1,
+                  postAdminMail: 1,
+                  image: 1,
+                  authorImg: 1,
+                  shortDescription: 1,
+                  details: 1,
+                  currentDate: 1,
+                  date: 1,
+                  detailsLength: { $strLenCP: "$details" }
+              }
+          },
+          { $sort: { detailsLength: -1 } },
+          { $limit: 10 }
+      ]);
+  
       const featuredBlogs = await cursor.toArray();
       res.send(featuredBlogs);
-    })
+  });
 
     app.get('/allBlogs/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const blog = await blogsCollection.findOne(query);
       res.send(blog);
-
     })
 
     app.delete('/blogs/:id', async (req, res) => {
