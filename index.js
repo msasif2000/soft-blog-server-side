@@ -58,6 +58,7 @@ async function run() {
     const blogsCollection = client.db("softBlogDB").collection("blogs");
     const wishListCollection = client.db("softBlogDB").collection("wishLists");
     const commentsCollection = client.db("softBlogDB").collection("comments");
+    const reactionCollection = client.db("softBlogDB").collection("reactions");
 
 
 
@@ -205,6 +206,39 @@ async function run() {
       res.send(result);
     })
 
+    //reaction
+    app.post('/addReaction', async (req, res) => {
+      const reaction = req.body;
+      const result = await reactionCollection.insertOne(reaction);
+      res.send(result);
+    })
+    app.get('/reactions', async (req, res) => {
+      const cursor = reactionCollection.find({});
+      const reactions = await cursor.toArray();
+      res.send(reactions);
+    });
+    app.get('/reactions/:id', async(req, res) => {
+      const id = req.params.id;
+      const query = { blogId: id };
+      const reactions = await reactionCollection.find(query).toArray();
+      res.send(reactions);
+    })
+
+    app.get('/reactionsState/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { currentEmail: email };
+      const reactions = await reactionCollection.find(query).toArray();
+      res.send(reactions);
+    });
+    
+
+    app.delete('/reaction/:_id', async (req, res) => {
+      const id = req.params._id;
+      const query = { _id: new ObjectId(id) };
+      const result = await reactionCollection.deleteOne(query);
+      res.send(result);
+    })
+
     app.get('/profile', async (req, res) => {
       const cursor = blogsCollection.find({});
       const blogs = await cursor.toArray();
@@ -236,6 +270,7 @@ async function run() {
       const comments = await commentsCollection.find(query).toArray();
       res.send(comments);
     })
+
 
 
     // Send a ping to confirm a successful connection
